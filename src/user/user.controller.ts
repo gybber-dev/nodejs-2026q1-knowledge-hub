@@ -8,12 +8,20 @@ import {
   ParseUUIDPipe,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import { UserResponseEntity } from './entities/user-response.entity';
+import { applyListOptions } from '../common/utils/list.utils';
 
 @ApiTags('users')
 @Controller('user')
@@ -22,14 +30,29 @@ export class UserController {
 
   @Get()
   @ApiOperation({ summary: 'Get all users' })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    type: 'string',
+    example: 'createdAt',
+  })
+  @ApiQuery({ name: 'order', required: false, enum: ['asc', 'desc'] })
+  @ApiQuery({ name: 'page', required: false, type: 'number' })
+  @ApiQuery({ name: 'limit', required: false, type: 'number' })
   @ApiResponse({
     status: 200,
     description: 'List of all users',
     type: UserResponseEntity,
     isArray: true,
   })
-  findAll() {
-    return this.userService.findAll();
+  findAll(
+    @Query('sortBy') sortBy?: string,
+    @Query('order') order?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const users = this.userService.findAll();
+    return applyListOptions(users, { sortBy, order, page, limit });
   }
 
   @Get(':id')

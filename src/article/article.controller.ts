@@ -22,6 +22,7 @@ import { CreateArticleDto } from './dto/create-article.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
 import { ArticleStatus } from '../common/enums/article-status.enum';
 import { ArticleResponseEntity } from './entities/article-response.entity';
+import { applyListOptions } from '../common/utils/list.utils';
 
 @ApiTags('articles')
 @Controller('article')
@@ -29,10 +30,21 @@ export class ArticleController {
   constructor(private readonly articleService: ArticleService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Get all articles with optional filtering' })
+  @ApiOperation({
+    summary: 'Get all articles with optional filtering, sorting and pagination',
+  })
   @ApiQuery({ name: 'status', enum: ArticleStatus, required: false })
   @ApiQuery({ name: 'categoryId', type: 'string', required: false })
   @ApiQuery({ name: 'tag', type: 'string', required: false })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    type: 'string',
+    example: 'createdAt',
+  })
+  @ApiQuery({ name: 'order', required: false, enum: ['asc', 'desc'] })
+  @ApiQuery({ name: 'page', required: false, type: 'number' })
+  @ApiQuery({ name: 'limit', required: false, type: 'number' })
   @ApiResponse({
     status: 200,
     description: 'List of articles',
@@ -43,8 +55,13 @@ export class ArticleController {
     @Query('status') status?: ArticleStatus,
     @Query('categoryId') categoryId?: string,
     @Query('tag') tag?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('order') order?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
   ) {
-    return this.articleService.findAll({ status, categoryId, tag });
+    const articles = this.articleService.findAll({ status, categoryId, tag });
+    return applyListOptions(articles, { sortBy, order, page, limit });
   }
 
   @Get(':id')

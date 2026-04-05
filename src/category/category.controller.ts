@@ -8,12 +8,20 @@ import {
   ParseUUIDPipe,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { CategoryResponseEntity } from './entities/category-response.entity';
+import { applyListOptions } from '../common/utils/list.utils';
 
 @ApiTags('categories')
 @Controller('category')
@@ -22,14 +30,29 @@ export class CategoryController {
 
   @Get()
   @ApiOperation({ summary: 'Get all categories' })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    type: 'string',
+    example: 'name',
+  })
+  @ApiQuery({ name: 'order', required: false, enum: ['asc', 'desc'] })
+  @ApiQuery({ name: 'page', required: false, type: 'number' })
+  @ApiQuery({ name: 'limit', required: false, type: 'number' })
   @ApiResponse({
     status: 200,
     description: 'List of all categories',
     type: CategoryResponseEntity,
     isArray: true,
   })
-  findAll() {
-    return this.categoryService.findAll();
+  findAll(
+    @Query('sortBy') sortBy?: string,
+    @Query('order') order?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const categories = this.categoryService.findAll();
+    return applyListOptions(categories, { sortBy, order, page, limit });
   }
 
   @Get(':id')

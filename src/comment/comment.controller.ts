@@ -20,6 +20,7 @@ import {
 import { CommentService } from './comment.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { CommentResponseEntity } from './entities/comment-response.entity';
+import { applyListOptions } from '../common/utils/list.utils';
 
 @ApiTags('comments')
 @Controller('comment')
@@ -29,6 +30,15 @@ export class CommentController {
   @Get()
   @ApiOperation({ summary: 'Get all comments for an article' })
   @ApiQuery({ name: 'articleId', type: 'string', required: true })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    type: 'string',
+    example: 'createdAt',
+  })
+  @ApiQuery({ name: 'order', required: false, enum: ['asc', 'desc'] })
+  @ApiQuery({ name: 'page', required: false, type: 'number' })
+  @ApiQuery({ name: 'limit', required: false, type: 'number' })
   @ApiResponse({
     status: 200,
     description: 'List of comments for the article',
@@ -36,11 +46,18 @@ export class CommentController {
     isArray: true,
   })
   @ApiResponse({ status: 400, description: 'articleId is missing or invalid' })
-  findByArticle(@Query('articleId') articleId: string) {
+  findByArticle(
+    @Query('articleId') articleId: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('order') order?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
     if (!articleId) {
       throw new BadRequestException('articleId query parameter is required');
     }
-    return this.commentService.findByArticleId(articleId);
+    const comments = this.commentService.findByArticleId(articleId);
+    return applyListOptions(comments, { sortBy, order, page, limit });
   }
 
   @Get(':id')
