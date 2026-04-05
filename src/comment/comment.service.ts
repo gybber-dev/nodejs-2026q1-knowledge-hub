@@ -1,4 +1,6 @@
 import {
+  forwardRef,
+  Inject,
   Injectable,
   NotFoundException,
   UnprocessableEntityException,
@@ -12,7 +14,10 @@ import { ArticleService } from '../article/article.service';
 export class CommentService {
   private comments: Comment[] = [];
 
-  constructor(private readonly articleService: ArticleService) {}
+  constructor(
+    @Inject(forwardRef(() => ArticleService))
+    private readonly articleService: ArticleService,
+  ) {}
 
   findByArticleId(articleId: string): Comment[] {
     return this.comments.filter((c) => c.articleId === articleId);
