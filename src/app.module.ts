@@ -3,9 +3,10 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
 import { CategoryModule } from './category/category.module';
 import { ArticleModule } from './article/article.module';
 import { CommentModule } from './comment/comment.module';
+import { UserModule } from './user/user.module';
 
 @Module({
-  imports: [CategoryModule, ArticleModule, CommentModule],
+  imports: [CategoryModule, ArticleModule, CommentModule, UserModule],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
