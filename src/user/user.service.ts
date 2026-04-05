@@ -71,7 +71,7 @@ export class UserService {
     }
 
     user.password = dto.newPassword;
-    user.updatedAt = Date.now();
+    user.updatedAt = Math.max(Date.now(), user.createdAt + 1);
 
     return this.toResponse(user);
   }
