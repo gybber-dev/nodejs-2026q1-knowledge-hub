@@ -21,6 +21,7 @@ import { ArticleService } from './article.service';
 import { CreateArticleDto } from './dto/create-article.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
 import { ArticleStatus } from '../common/enums/article-status.enum';
+import { ArticleResponseEntity } from './entities/article-response.entity';
 
 @ApiTags('articles')
 @Controller('article')
@@ -32,7 +33,12 @@ export class ArticleController {
   @ApiQuery({ name: 'status', enum: ArticleStatus, required: false })
   @ApiQuery({ name: 'categoryId', type: 'string', required: false })
   @ApiQuery({ name: 'tag', type: 'string', required: false })
-  @ApiResponse({ status: 200, description: 'List of articles' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of articles',
+    type: ArticleResponseEntity,
+    isArray: true,
+  })
   findAll(
     @Query('status') status?: ArticleStatus,
     @Query('categoryId') categoryId?: string,
@@ -44,7 +50,11 @@ export class ArticleController {
   @Get(':id')
   @ApiOperation({ summary: 'Get article by id' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
-  @ApiResponse({ status: 200, description: 'Article found' })
+  @ApiResponse({
+    status: 200,
+    description: 'Article found',
+    type: ArticleResponseEntity,
+  })
   @ApiResponse({ status: 400, description: 'Invalid UUID' })
   @ApiResponse({ status: 404, description: 'Article not found' })
   findOne(@Param('id', ParseUUIDPipe) id: string) {
@@ -53,7 +63,11 @@ export class ArticleController {
 
   @Post()
   @ApiOperation({ summary: 'Create new article' })
-  @ApiResponse({ status: 201, description: 'Article created' })
+  @ApiResponse({
+    status: 201,
+    description: 'Article created',
+    type: ArticleResponseEntity,
+  })
   @ApiResponse({ status: 400, description: 'Validation error' })
   create(@Body() dto: CreateArticleDto) {
     return this.articleService.create(dto);
@@ -62,7 +76,11 @@ export class ArticleController {
   @Put(':id')
   @ApiOperation({ summary: 'Update article' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
-  @ApiResponse({ status: 200, description: 'Article updated' })
+  @ApiResponse({
+    status: 200,
+    description: 'Article updated',
+    type: ArticleResponseEntity,
+  })
   @ApiResponse({ status: 400, description: 'Invalid UUID or validation error' })
   @ApiResponse({ status: 404, description: 'Article not found' })
   update(

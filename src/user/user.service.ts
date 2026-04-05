@@ -23,8 +23,13 @@ export class UserService {
   ) {}
 
   private toResponse(user: User): UserResponse {
-    const { password, ...rest } = user;
-    return rest;
+    return {
+      id: user.id,
+      login: user.login,
+      role: user.role,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
   }
 
   findAll(): UserResponse[] {

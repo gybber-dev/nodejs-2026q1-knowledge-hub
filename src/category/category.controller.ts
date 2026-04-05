@@ -13,6 +13,7 @@ import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
+import { CategoryResponseEntity } from './entities/category-response.entity';
 
 @ApiTags('categories')
 @Controller('category')
@@ -21,7 +22,12 @@ export class CategoryController {
 
   @Get()
   @ApiOperation({ summary: 'Get all categories' })
-  @ApiResponse({ status: 200, description: 'List of all categories' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of all categories',
+    type: CategoryResponseEntity,
+    isArray: true,
+  })
   findAll() {
     return this.categoryService.findAll();
   }
@@ -29,7 +35,11 @@ export class CategoryController {
   @Get(':id')
   @ApiOperation({ summary: 'Get category by id' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
-  @ApiResponse({ status: 200, description: 'Category found' })
+  @ApiResponse({
+    status: 200,
+    description: 'Category found',
+    type: CategoryResponseEntity,
+  })
   @ApiResponse({ status: 400, description: 'Invalid UUID' })
   @ApiResponse({ status: 404, description: 'Category not found' })
   findOne(@Param('id', ParseUUIDPipe) id: string) {
@@ -38,7 +48,11 @@ export class CategoryController {
 
   @Post()
   @ApiOperation({ summary: 'Create new category' })
-  @ApiResponse({ status: 201, description: 'Category created' })
+  @ApiResponse({
+    status: 201,
+    description: 'Category created',
+    type: CategoryResponseEntity,
+  })
   @ApiResponse({ status: 400, description: 'Validation error' })
   create(@Body() dto: CreateCategoryDto) {
     return this.categoryService.create(dto);
@@ -47,7 +61,11 @@ export class CategoryController {
   @Put(':id')
   @ApiOperation({ summary: 'Update category' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
-  @ApiResponse({ status: 200, description: 'Category updated' })
+  @ApiResponse({
+    status: 200,
+    description: 'Category updated',
+    type: CategoryResponseEntity,
+  })
   @ApiResponse({ status: 400, description: 'Invalid UUID or validation error' })
   @ApiResponse({ status: 404, description: 'Category not found' })
   update(

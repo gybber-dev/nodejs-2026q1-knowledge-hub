@@ -13,6 +13,7 @@ import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
+import { UserResponseEntity } from './entities/user-response.entity';
 
 @ApiTags('users')
 @Controller('user')
@@ -23,7 +24,9 @@ export class UserController {
   @ApiOperation({ summary: 'Get all users' })
   @ApiResponse({
     status: 200,
-    description: 'List of all users (without passwords)',
+    description: 'List of all users',
+    type: UserResponseEntity,
+    isArray: true,
   })
   findAll() {
     return this.userService.findAll();
@@ -32,7 +35,11 @@ export class UserController {
   @Get(':id')
   @ApiOperation({ summary: 'Get user by id' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
-  @ApiResponse({ status: 200, description: 'User found' })
+  @ApiResponse({
+    status: 200,
+    description: 'User found',
+    type: UserResponseEntity,
+  })
   @ApiResponse({ status: 400, description: 'Invalid UUID' })
   @ApiResponse({ status: 404, description: 'User not found' })
   findOne(@Param('id', ParseUUIDPipe) id: string) {
@@ -41,7 +48,11 @@ export class UserController {
 
   @Post()
   @ApiOperation({ summary: 'Create new user' })
-  @ApiResponse({ status: 201, description: 'User created (without password)' })
+  @ApiResponse({
+    status: 201,
+    description: 'User created',
+    type: UserResponseEntity,
+  })
   @ApiResponse({ status: 400, description: 'Validation error' })
   create(@Body() dto: CreateUserDto) {
     return this.userService.create(dto);
@@ -50,7 +61,11 @@ export class UserController {
   @Put(':id')
   @ApiOperation({ summary: "Update user's password" })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
-  @ApiResponse({ status: 200, description: 'Password updated' })
+  @ApiResponse({
+    status: 200,
+    description: 'Password updated',
+    type: UserResponseEntity,
+  })
   @ApiResponse({ status: 400, description: 'Invalid UUID or validation error' })
   @ApiResponse({ status: 403, description: 'Old password is incorrect' })
   @ApiResponse({ status: 404, description: 'User not found' })

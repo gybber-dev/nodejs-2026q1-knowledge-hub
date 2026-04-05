@@ -19,6 +19,7 @@ import {
 } from '@nestjs/swagger';
 import { CommentService } from './comment.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
+import { CommentResponseEntity } from './entities/comment-response.entity';
 
 @ApiTags('comments')
 @Controller('comment')
@@ -28,7 +29,12 @@ export class CommentController {
   @Get()
   @ApiOperation({ summary: 'Get all comments for an article' })
   @ApiQuery({ name: 'articleId', type: 'string', required: true })
-  @ApiResponse({ status: 200, description: 'List of comments for the article' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of comments for the article',
+    type: CommentResponseEntity,
+    isArray: true,
+  })
   @ApiResponse({ status: 400, description: 'articleId is missing or invalid' })
   findByArticle(@Query('articleId') articleId: string) {
     if (!articleId) {
@@ -40,7 +46,11 @@ export class CommentController {
   @Get(':id')
   @ApiOperation({ summary: 'Get comment by id' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
-  @ApiResponse({ status: 200, description: 'Comment found' })
+  @ApiResponse({
+    status: 200,
+    description: 'Comment found',
+    type: CommentResponseEntity,
+  })
   @ApiResponse({ status: 400, description: 'Invalid UUID' })
   @ApiResponse({ status: 404, description: 'Comment not found' })
   findOne(@Param('id', ParseUUIDPipe) id: string) {
@@ -49,7 +59,11 @@ export class CommentController {
 
   @Post()
   @ApiOperation({ summary: 'Create new comment' })
-  @ApiResponse({ status: 201, description: 'Comment created' })
+  @ApiResponse({
+    status: 201,
+    description: 'Comment created',
+    type: CommentResponseEntity,
+  })
   @ApiResponse({ status: 400, description: 'Validation error' })
   @ApiResponse({
     status: 422,
