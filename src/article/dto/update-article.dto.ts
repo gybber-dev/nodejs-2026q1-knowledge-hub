@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsArray,
   IsEnum,
@@ -8,21 +8,20 @@ import {
 } from 'class-validator';
 import { ArticleStatus } from '../../common/enums/article-status.enum';
 
-export class CreateArticleDto {
-  @ApiProperty({ example: 'Introduction to NestJS' })
+export class UpdateArticleDto {
+  @ApiPropertyOptional({ example: 'Updated title' })
+  @IsOptional()
   @IsString()
   @IsNotEmpty()
-  title: string;
+  title?: string;
 
-  @ApiProperty({
-    example:
-      'NestJS is a framework for building efficient server-side applications',
-  })
+  @ApiPropertyOptional({ example: 'Updated content' })
+  @IsOptional()
   @IsString()
   @IsNotEmpty()
-  content: string;
+  content?: string;
 
-  @ApiPropertyOptional({ enum: ArticleStatus, default: ArticleStatus.DRAFT })
+  @ApiPropertyOptional({ enum: ArticleStatus })
   @IsOptional()
   @IsEnum(ArticleStatus)
   status?: ArticleStatus;
@@ -37,7 +36,7 @@ export class CreateArticleDto {
   @IsString()
   categoryId?: string | null;
 
-  @ApiPropertyOptional({ example: ['nestjs', 'typescript'] })
+  @ApiPropertyOptional({ example: ['nestjs'] })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })

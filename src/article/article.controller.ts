@@ -1,7 +1,26 @@
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Put,
+  Query,
+} from '@nestjs/common';
+import {
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { ArticleService } from './article.service';
-import { Body, Controller, Get, Post } from '@nestjs/common';
 import { CreateArticleDto } from './dto/create-article.dto';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { UpdateArticleDto } from './dto/update-article.dto';
+import { ArticleStatus } from '../common/enums/article-status.enum';
 
 @ApiTags('articles')
 @Controller('article')
@@ -9,10 +28,27 @@ export class ArticleController {
   constructor(private readonly articleService: ArticleService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Get all articles' })
-  @ApiResponse({ status: 200, description: 'List of all articles' })
-  findAll() {
-    return this.articleService.findAll();
+  @ApiOperation({ summary: 'Get all articles with optional filtering' })
+  @ApiQuery({ name: 'status', enum: ArticleStatus, required: false })
+  @ApiQuery({ name: 'categoryId', type: 'string', required: false })
+  @ApiQuery({ name: 'tag', type: 'string', required: false })
+  @ApiResponse({ status: 200, description: 'List of articles' })
+  findAll(
+    @Query('status') status?: ArticleStatus,
+    @Query('categoryId') categoryId?: string,
+    @Query('tag') tag?: string,
+  ) {
+    return this.articleService.findAll({ status, categoryId, tag });
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get article by id' })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  @ApiResponse({ status: 200, description: 'Article found' })
+  @ApiResponse({ status: 400, description: 'Invalid UUID' })
+  @ApiResponse({ status: 404, description: 'Article not found' })
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
+    return this.articleService.findById(id);
   }
 
   @Post()
@@ -21,5 +57,29 @@ export class ArticleController {
   @ApiResponse({ status: 400, description: 'Validation error' })
   create(@Body() dto: CreateArticleDto) {
     return this.articleService.create(dto);
+  }
+
+  @Put(':id')
+  @ApiOperation({ summary: 'Update article' })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  @ApiResponse({ status: 200, description: 'Article updated' })
+  @ApiResponse({ status: 400, description: 'Invalid UUID or validation error' })
+  @ApiResponse({ status: 404, description: 'Article not found' })
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateArticleDto,
+  ) {
+    return this.articleService.update(id, dto);
+  }
+
+  @Delete(':id')
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Delete article' })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  @ApiResponse({ status: 204, description: 'Article deleted' })
+  @ApiResponse({ status: 400, description: 'Invalid UUID' })
+  @ApiResponse({ status: 404, description: 'Article not found' })
+  remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.articleService.delete(id);
   }
 }

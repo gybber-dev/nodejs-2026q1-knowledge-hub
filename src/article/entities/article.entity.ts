@@ -1,11 +1,13 @@
+import { ArticleStatus } from '../../common/enums/article-status.enum';
+
 export interface Article {
   id: string;
   title: string;
   content: string;
-  categoryId?: string;
-  status?: string;
-  authorId?: string;
-  tags?: string[];
-  createdAt?: number;
-  updatedAt?: number;
+  status: ArticleStatus;
+  authorId: string | null;
+  categoryId: string | null;
+  tags: string[];
+  createdAt: number;
+  updatedAt: number;
 }
