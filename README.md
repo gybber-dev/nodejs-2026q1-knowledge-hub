@@ -2,6 +2,10 @@
 
 A REST API for a **Knowledge Hub** platform built with [Nest.js](https://nestjs.com/). Manage users, articles, categories, and comments with full CRUD support, cascading deletions, request logging, DTO validation, and OpenAPI documentation.
 
+[![Docker Hub](https://img.shields.io/docker/pulls/yeschall/knowledge-hub)](https://hub.docker.com/r/yeschall/knowledge-hub)
+
+> Docker image: `yeschall/knowledge-hub:latest`
+
 ## Requirements
 
 - [Node.js](https://nodejs.org/en/download/) **24.x** (24.10.0 or higher)
