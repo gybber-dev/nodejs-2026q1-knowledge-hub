@@ -46,7 +46,7 @@ export class CommentController {
     isArray: true,
   })
   @ApiResponse({ status: 400, description: 'articleId is missing or invalid' })
-  findByArticle(
+  async findByArticle(
     @Query('articleId') articleId: string,
     @Query('sortBy') sortBy?: string,
     @Query('order') order?: string,
@@ -56,7 +56,7 @@ export class CommentController {
     if (!articleId) {
       throw new BadRequestException('articleId query parameter is required');
     }
-    const comments = this.commentService.findByArticleId(articleId);
+    const comments = await this.commentService.findByArticleId(articleId);
     return applyListOptions(comments, { sortBy, order, page, limit });
   }
 

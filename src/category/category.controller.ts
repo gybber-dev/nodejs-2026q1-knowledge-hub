@@ -45,13 +45,13 @@ export class CategoryController {
     type: CategoryResponseEntity,
     isArray: true,
   })
-  findAll(
+  async findAll(
     @Query('sortBy') sortBy?: string,
     @Query('order') order?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    const categories = this.categoryService.findAll();
+    const categories = await this.categoryService.findAll();
     return applyListOptions(categories, { sortBy, order, page, limit });
   }
 

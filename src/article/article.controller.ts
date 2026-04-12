@@ -51,7 +51,7 @@ export class ArticleController {
     type: ArticleResponseEntity,
     isArray: true,
   })
-  findAll(
+  async findAll(
     @Query('status') status?: ArticleStatus,
     @Query('categoryId') categoryId?: string,
     @Query('tag') tag?: string,
@@ -60,7 +60,11 @@ export class ArticleController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    const articles = this.articleService.findAll({ status, categoryId, tag });
+    const articles = await this.articleService.findAll({
+      status,
+      categoryId,
+      tag,
+    });
     return applyListOptions(articles, { sortBy, order, page, limit });
   }
 
