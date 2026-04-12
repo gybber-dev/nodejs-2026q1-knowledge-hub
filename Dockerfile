@@ -16,6 +16,8 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
+RUN apk upgrade --no-cache
+
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/package*.json ./
 
