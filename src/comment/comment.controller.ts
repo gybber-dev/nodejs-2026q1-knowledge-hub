@@ -20,7 +20,6 @@ import {
 import { CommentService } from './comment.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { CommentResponseEntity } from './entities/comment-response.entity';
-import { applyListOptions } from '../common/utils/list.utils';
 
 @ApiTags('comments')
 @Controller('comment')
@@ -56,8 +55,12 @@ export class CommentController {
     if (!articleId) {
       throw new BadRequestException('articleId query parameter is required');
     }
-    const comments = await this.commentService.findByArticleId(articleId);
-    return applyListOptions(comments, { sortBy, order, page, limit });
+    return this.commentService.findByArticleId(articleId, {
+      sortBy,
+      order,
+      page,
+      limit,
+    });
   }
 
   @Get(':id')

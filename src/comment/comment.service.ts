@@ -6,6 +6,11 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { Comment } from '../../generated/prisma/client';
+import {
+  ListQuery,
+  PaginatedResult,
+  parsePrismaListArgs,
+} from '../common/utils/list.utils';
 
 type CommentResponse = Omit<Comment, 'createdAt'> & { createdAt: number };
 
@@ -23,9 +28,31 @@ export class CommentService {
     };
   }
 
-  async findByArticleId(articleId: string): Promise<CommentResponse[]> {
+  async findByArticleId(
+    articleId: string,
+    query?: ListQuery,
+  ): Promise<CommentResponse[] | PaginatedResult<CommentResponse>> {
+    const { orderBy, skip, take, pagination } = parsePrismaListArgs(
+      query ?? {},
+    );
+    const where = { articleId };
+
+    if (pagination) {
+      const [comments, total] = await Promise.all([
+        this.prisma.comment.findMany({ where, orderBy, skip, take }),
+        this.prisma.comment.count({ where }),
+      ]);
+      return {
+        data: comments.map((c) => this.toResponse(c)),
+        total,
+        page: pagination.page,
+        limit: pagination.limit,
+      };
+    }
+
     const comments = await this.prisma.comment.findMany({
-      where: { articleId },
+      where,
+      orderBy,
     });
     return comments.map((c) => this.toResponse(c));
   }

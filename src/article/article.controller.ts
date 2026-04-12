@@ -22,7 +22,6 @@ import { CreateArticleDto } from './dto/create-article.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
 import { ArticleStatus } from '../common/enums/article-status.enum';
 import { ArticleResponseEntity } from './entities/article-response.entity';
-import { applyListOptions } from '../common/utils/list.utils';
 
 @ApiTags('articles')
 @Controller('article')
@@ -60,12 +59,10 @@ export class ArticleController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    const articles = await this.articleService.findAll({
-      status,
-      categoryId,
-      tag,
-    });
-    return applyListOptions(articles, { sortBy, order, page, limit });
+    return this.articleService.findAll(
+      { status, categoryId, tag },
+      { sortBy, order, page, limit },
+    );
   }
 
   @Get(':id')

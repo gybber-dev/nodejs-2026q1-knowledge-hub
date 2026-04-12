@@ -3,6 +3,11 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateArticleDto } from './dto/create-article.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
 import { Article, ArticleStatus } from '../../generated/prisma/client';
+import {
+  ListQuery,
+  PaginatedResult,
+  parsePrismaListArgs,
+} from '../common/utils/list.utils';
 
 export interface ArticleFilter {
   status?: ArticleStatus;
@@ -43,13 +48,42 @@ export class ArticleService {
     }));
   }
 
-  async findAll(filter?: ArticleFilter): Promise<ArticleResponse[]> {
+  async findAll(
+    filter?: ArticleFilter,
+    query?: ListQuery,
+  ): Promise<ArticleResponse[] | PaginatedResult<ArticleResponse>> {
+    const { orderBy, skip, take, pagination } = parsePrismaListArgs(
+      query ?? {},
+    );
+
+    const where = {
+      ...(filter?.status && { status: filter.status }),
+      ...(filter?.categoryId && { categoryId: filter.categoryId }),
+      ...(filter?.tag && { tags: { some: { name: filter.tag } } }),
+    };
+
+    if (pagination) {
+      const [articles, total] = await Promise.all([
+        this.prisma.article.findMany({
+          where,
+          orderBy,
+          skip,
+          take,
+          include: { tags: true },
+        }),
+        this.prisma.article.count({ where }),
+      ]);
+      return {
+        data: articles.map((a) => this.toResponse(a)),
+        total,
+        page: pagination.page,
+        limit: pagination.limit,
+      };
+    }
+
     const articles = await this.prisma.article.findMany({
-      where: {
-        ...(filter?.status && { status: filter.status }),
-        ...(filter?.categoryId && { categoryId: filter.categoryId }),
-        ...(filter?.tag && { tags: { some: { name: filter.tag } } }),
-      },
+      where,
+      orderBy,
       include: { tags: true },
     });
     return articles.map((a) => this.toResponse(a));

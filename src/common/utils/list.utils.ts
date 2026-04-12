@@ -5,39 +5,36 @@ export interface PaginatedResult<T> {
   limit: number;
 }
 
-export interface ListOptions {
+export interface ListQuery {
   sortBy?: string;
   order?: string;
-  page?: string | number;
-  limit?: string | number;
+  page?: string;
+  limit?: string;
 }
 
-export function applyListOptions<T>(
-  items: T[],
-  options: ListOptions,
-): T[] | PaginatedResult<T> {
-  const result = [...items];
+export interface PrismaListArgs {
+  orderBy: Record<string, 'asc' | 'desc'> | undefined;
+  skip: number | undefined;
+  take: number | undefined;
+  pagination: { page: number; limit: number } | null;
+}
 
-  if (options.sortBy) {
-    const key = options.sortBy as keyof T;
-    const direction = options.order === 'desc' ? -1 : 1;
-    result.sort((a, b) => {
-      if (a[key] < b[key]) return -1 * direction;
-      if (a[key] > b[key]) return 1 * direction;
-      return 0;
-    });
-  }
+export function parsePrismaListArgs(query: ListQuery): PrismaListArgs {
+  const direction: 'asc' | 'desc' =
+    query.order === 'desc' ? 'desc' : 'asc';
+  const orderBy = query.sortBy
+    ? { [query.sortBy]: direction }
+    : undefined;
 
-  const rawPage = options.page;
-  const rawLimit = options.limit;
+  const hasPagination =
+    query.page !== undefined || query.limit !== undefined;
+  const page = query.page ? Number(query.page) : 1;
+  const limit = query.limit ? Number(query.limit) : 10;
 
-  if (rawPage !== undefined || rawLimit !== undefined) {
-    const page = rawPage !== undefined ? Number(rawPage) : 1;
-    const limit = rawLimit !== undefined ? Number(rawLimit) : 10;
-    const total = result.length;
-    const data = result.slice((page - 1) * limit, page * limit);
-    return { data, total, page, limit };
-  }
-
-  return result;
+  return {
+    orderBy,
+    skip: hasPagination ? (page - 1) * limit : undefined,
+    take: hasPagination ? limit : undefined,
+    pagination: hasPagination ? { page, limit } : null,
+  };
 }

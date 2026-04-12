@@ -6,6 +6,13 @@ const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
+  // Clean up existing data (order matters: dependents first)
+  await prisma.comment.deleteMany();
+  await prisma.article.deleteMany();
+  await prisma.tag.deleteMany();
+  await prisma.category.deleteMany();
+  await prisma.user.deleteMany();
+
   // Users
   const admin = await prisma.user.upsert({
     where: { login: 'admin' },

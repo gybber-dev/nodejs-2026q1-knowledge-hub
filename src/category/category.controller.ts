@@ -21,7 +21,6 @@ import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { CategoryResponseEntity } from './entities/category-response.entity';
-import { applyListOptions } from '../common/utils/list.utils';
 
 @ApiTags('categories')
 @Controller('category')
@@ -51,8 +50,7 @@ export class CategoryController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    const categories = await this.categoryService.findAll();
-    return applyListOptions(categories, { sortBy, order, page, limit });
+    return this.categoryService.findAll({ sortBy, order, page, limit });
   }
 
   @Get(':id')

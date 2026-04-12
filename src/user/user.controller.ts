@@ -21,7 +21,6 @@ import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import { UserResponseEntity } from './entities/user-response.entity';
-import { applyListOptions } from '../common/utils/list.utils';
 
 @ApiTags('users')
 @Controller('user')
@@ -51,8 +50,7 @@ export class UserController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    const users = await this.userService.findAll();
-    return applyListOptions(users, { sortBy, order, page, limit });
+    return this.userService.findAll({ sortBy, order, page, limit });
   }
 
   @Get(':id')

@@ -7,6 +7,11 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import { User, UserRole } from '../../generated/prisma/client';
+import {
+  ListQuery,
+  PaginatedResult,
+  parsePrismaListArgs,
+} from '../common/utils/list.utils';
 
 type UserResponse = Omit<User, 'password' | 'createdAt' | 'updatedAt'> & {
   createdAt: number;
@@ -27,8 +32,27 @@ export class UserService {
     };
   }
 
-  async findAll(): Promise<UserResponse[]> {
-    const users = await this.prisma.user.findMany();
+  async findAll(
+    query?: ListQuery,
+  ): Promise<UserResponse[] | PaginatedResult<UserResponse>> {
+    const { orderBy, skip, take, pagination } = parsePrismaListArgs(
+      query ?? {},
+    );
+
+    if (pagination) {
+      const [users, total] = await Promise.all([
+        this.prisma.user.findMany({ orderBy, skip, take }),
+        this.prisma.user.count(),
+      ]);
+      return {
+        data: users.map((u) => this.toResponse(u)),
+        total,
+        page: pagination.page,
+        limit: pagination.limit,
+      };
+    }
+
+    const users = await this.prisma.user.findMany({ orderBy });
     return users.map((u) => this.toResponse(u));
   }
 
