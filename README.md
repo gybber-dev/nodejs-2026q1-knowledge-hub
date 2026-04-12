@@ -206,15 +206,22 @@ npm run build
 ## Project Structure
 
 ```
+prisma/
+├── schema.prisma                # Data models, relations, enums
+├── migrations/                  # SQL migration history
+└── seed.ts                      # Initial seed data
 src/
 ├── app.module.ts                # Root module with middleware setup
 ├── main.ts                      # Bootstrap: ValidationPipe, Swagger, port
+├── prisma/
+│   ├── prisma.module.ts         # Global PrismaModule
+│   └── prisma.service.ts        # PrismaClient with pg connection pool
 ├── article/
 │   ├── article.controller.ts    # REST endpoints
 │   ├── article.module.ts
-│   ├── article.service.ts       # In-memory CRUD + filtering
+│   ├── article.service.ts       # Prisma-backed CRUD + filtering
 │   ├── dto/                     # CreateArticleDto, UpdateArticleDto
-│   └── entities/                # Article entity, ArticleResponseEntity
+│   └── entities/                # ArticleResponseEntity
 ├── category/                    # Same structure
 ├── comment/                     # Same structure
 ├── user/                        # Same structure
@@ -222,13 +229,14 @@ src/
     ├── enums/                   # UserRole, ArticleStatus
     ├── middleware/              # LoggerMiddleware
     └── utils/
-        └── list.utils.ts        # Shared paginate + sort utility
+        └── list.utils.ts        # Prisma orderBy/skip/take helpers + PaginatedResult
 ```
 
 ## Key Design Decisions
 
-- **In-memory storage** — plain arrays, ready to swap for a database in the next task.
-- **Cascading deletes** — handled in services via cross-module injection (`forwardRef` where needed).
+- **PostgreSQL + Prisma ORM** — all data persisted in a real database; Prisma handles queries, migrations, and type safety.
+- **Connection pooling** — `pg.Pool` with configurable size via `DB_POOL_SIZE` env var (default: `os.cpus() * 2 + 1`).
+- **Cascading deletes** — enforced at the database level via Prisma `onDelete` rules (`SetNull` / `Cascade`).
 - **Password security** — excluded from all API responses via a dedicated `toResponse()` method.
-- **Optional pagination** — without `page`/`limit` params the endpoint returns a plain array (backward compatible); with them it returns `{ data, total, page, limit }`.
-- **`forwardRef`** — resolves the circular dependency between `ArticleModule` ↔ `CommentModule`.
+- **Optional pagination** — without `page`/`limit` params the endpoint returns a plain array (backward compatible); with them it returns `{ data, total, page, limit }`. Sorting and pagination are executed at the DB level via `orderBy` / `skip` / `take`.
+- **Tag many-to-many** — managed via `connectOrCreate` pattern; updating tags uses `set: []` + `connectOrCreate` to replace the full set atomically.
