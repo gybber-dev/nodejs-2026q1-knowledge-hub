@@ -45,13 +45,13 @@ export class UserController {
     type: UserResponseEntity,
     isArray: true,
   })
-  findAll(
+  async findAll(
     @Query('sortBy') sortBy?: string,
     @Query('order') order?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    const users = this.userService.findAll();
+    const users = await this.userService.findAll();
     return applyListOptions(users, { sortBy, order, page, limit });
   }
 

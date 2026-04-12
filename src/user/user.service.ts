@@ -3,86 +3,86 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { randomUUID } from 'crypto';
-import { User } from './entities/user.entity';
+import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
-import { UserRole } from '../common/enums/user-role.enum';
-import { ArticleService } from '../article/article.service';
-import { CommentService } from '../comment/comment.service';
+import { User, UserRole } from '../../generated/prisma/client';
 
-type UserResponse = Omit<User, 'password'>;
+type UserResponse = Omit<User, 'password' | 'createdAt' | 'updatedAt'> & {
+  createdAt: number;
+  updatedAt: number;
+};
 
 @Injectable()
 export class UserService {
-  private users: User[] = [];
-
-  constructor(
-    private readonly articleService: ArticleService,
-    private readonly commentService: CommentService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   private toResponse(user: User): UserResponse {
     return {
       id: user.id,
       login: user.login,
       role: user.role,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
+      createdAt: user.createdAt.getTime(),
+      updatedAt: user.updatedAt.getTime(),
     };
   }
 
-  findAll(): UserResponse[] {
-    return this.users.map((u) => this.toResponse(u));
+  async findAll(): Promise<UserResponse[]> {
+    const users = await this.prisma.user.findMany();
+    return users.map((u) => this.toResponse(u));
   }
 
-  findById(id: string): UserResponse {
-    const user = this.findRaw(id);
+  async findById(id: string): Promise<UserResponse> {
+    const user = await this.findRaw(id);
     return this.toResponse(user);
   }
 
-  findRaw(id: string): User {
-    const user = this.users.find((u) => u.id === id);
+  async findRaw(id: string): Promise<User> {
+    const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) {
       throw new NotFoundException(`User with id ${id} not found`);
     }
     return user;
   }
 
-  create(dto: CreateUserDto): UserResponse {
-    const now = Date.now();
-    const user: User = {
-      id: randomUUID(),
-      login: dto.login,
-      password: dto.password,
-      role: dto.role ?? UserRole.VIEWER,
-      createdAt: now,
-      updatedAt: now,
-    };
-    this.users.push(user);
+  async create(dto: CreateUserDto): Promise<UserResponse> {
+    const user = await this.prisma.user.create({
+      data: {
+        login: dto.login,
+        password: dto.password,
+        role: (dto.role as UserRole) ?? 'viewer',
+      },
+    });
     return this.toResponse(user);
   }
 
-  updatePassword(id: string, dto: UpdatePasswordDto): UserResponse {
-    const user = this.findRaw(id);
+  async updatePassword(
+    id: string,
+    dto: UpdatePasswordDto,
+  ): Promise<UserResponse> {
+    const user = await this.findRaw(id);
 
     if (user.password !== dto.oldPassword) {
       throw new ForbiddenException('Old password is incorrect');
     }
 
-    user.password = dto.newPassword;
-    user.updatedAt = Math.max(Date.now(), user.createdAt + 1);
+    const updated = await this.prisma.user.update({
+      where: { id },
+      data: { password: dto.newPassword },
+    });
 
-    return this.toResponse(user);
+    return this.toResponse(updated);
   }
 
-  delete(id: string): void {
-    const index = this.users.findIndex((u) => u.id === id);
-    if (index === -1) {
-      throw new NotFoundException(`User with id ${id} not found`);
-    }
-    this.articleService.nullifyAuthor(id);
-    this.commentService.deleteByAuthorId(id);
-    this.users.splice(index, 1);
+  async delete(id: string): Promise<void> {
+    await this.findRaw(id);
+
+    await this.prisma.$transaction([
+      this.prisma.article.updateMany({
+        where: { authorId: id },
+        data: { authorId: null },
+      }),
+      this.prisma.user.delete({ where: { id } }),
+    ]);
   }
 }
