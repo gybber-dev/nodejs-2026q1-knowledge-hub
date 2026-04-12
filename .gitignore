@@ -37,3 +37,4 @@ lerna-debug.log*
 .tasks/
 .dev-test/
 .env
+/generated/prisma
