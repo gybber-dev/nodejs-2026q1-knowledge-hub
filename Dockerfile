@@ -20,6 +20,8 @@ RUN apk upgrade --no-cache
 
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/package*.json ./
+COPY --from=build /app/prisma ./prisma
+COPY --from=build /app/dist/prisma.config.js ./prisma.config.js
 
 RUN npm ci --omit=dev
 
@@ -27,4 +29,4 @@ USER node
 
 EXPOSE 4000
 
-CMD ["node", "dist/main"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/main"]
