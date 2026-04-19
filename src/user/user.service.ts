@@ -104,6 +104,16 @@ export class UserService {
     dto: UpdateUserDto,
     currentUser: JwtPayload,
   ): Promise<UserResponse> {
+    const hasPasswordChange =
+      dto.oldPassword !== undefined || dto.newPassword !== undefined;
+    const hasRoleChange = dto.role !== undefined;
+
+    if (!hasPasswordChange && !hasRoleChange) {
+      throw new BadRequestException(
+        'At least one field (oldPassword/newPassword or role) must be provided',
+      );
+    }
+
     const user = await this.findRaw(id);
     const updateData: Partial<{ password: string; role: UserRole }> = {};
 
@@ -121,7 +131,10 @@ export class UserService {
         );
       }
 
-      const passwordValid = await bcrypt.compare(dto.oldPassword, user.password);
+      const passwordValid = await bcrypt.compare(
+        dto.oldPassword,
+        user.password,
+      );
       if (!passwordValid) {
         throw new ForbiddenException('Old password is incorrect');
       }

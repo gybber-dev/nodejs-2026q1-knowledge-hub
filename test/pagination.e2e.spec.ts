@@ -1,11 +1,32 @@
 import { request } from './lib';
 import { StatusCodes } from 'http-status-codes';
 import { articlesRoutes, categoriesRoutes, usersRoutes } from './endpoints';
+import {
+  getTokenAndUserId,
+  shouldAuthorizationBeTested,
+  removeTokenUser,
+} from './utils';
 
 const createUserDto = { login: 'PAGINATION_USER', password: 'TEST_PASSWORD' };
-const commonHeaders = { Accept: 'application/json' };
+const commonHeaders: Record<string, string> = { Accept: 'application/json' };
+let mockUserId: string | undefined;
 
 describe('Pagination & Sorting (e2e)', () => {
+  beforeAll(async () => {
+    if (shouldAuthorizationBeTested) {
+      const result = await getTokenAndUserId(request);
+      commonHeaders['Authorization'] = result.token;
+      mockUserId = result.mockUserId;
+    }
+  });
+
+  afterAll(async () => {
+    if (mockUserId) {
+      await removeTokenUser(request, mockUserId, commonHeaders);
+      delete commonHeaders['Authorization'];
+      mockUserId = undefined;
+    }
+  });
   describe('Articles — pagination', () => {
     const ids: string[] = [];
 
