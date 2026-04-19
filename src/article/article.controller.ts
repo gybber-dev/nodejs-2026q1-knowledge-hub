@@ -101,15 +101,18 @@ export class ArticleController {
 
   @Delete(':id')
   @HttpCode(204)
-  @Roles(UserRole.ADMIN)
-  @ApiOperation({ summary: 'Delete article (admin only)' })
+  @Roles(UserRole.ADMIN, UserRole.EDITOR)
+  @ApiOperation({ summary: 'Delete article (admin or editor — own article only)' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 204, description: 'Article deleted' })
   @ApiResponse({ status: 400, description: 'Invalid UUID' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden (admin only)' })
+  @ApiResponse({ status: 403, description: 'Forbidden or not owner' })
   @ApiResponse({ status: 404, description: 'Article not found' })
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.articleService.delete(id);
+  remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() currentUser: JwtPayload,
+  ) {
+    return this.articleService.delete(id, currentUser);
   }
 }

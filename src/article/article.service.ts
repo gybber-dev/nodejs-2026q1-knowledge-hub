@@ -167,8 +167,19 @@ export class ArticleService {
     return this.toResponse(article);
   }
 
-  async delete(id: string): Promise<void> {
-    await this.findById(id);
+  async delete(id: string, currentUser: JwtPayload): Promise<void> {
+    const existing = await this.prisma.article.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException(`Article with id ${id} not found`);
+    }
+
+    if (
+      currentUser.role !== UserRole.ADMIN &&
+      existing.authorId !== currentUser.userId
+    ) {
+      throw new ForbiddenException('You can only delete your own articles');
+    }
+
     await this.prisma.article.delete({ where: { id } });
   }
 }
