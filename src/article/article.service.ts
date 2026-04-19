@@ -106,13 +106,22 @@ export class ArticleService {
     return this.toResponse(article);
   }
 
-  async create(dto: CreateArticleDto): Promise<ArticleResponse> {
+  async create(
+    dto: CreateArticleDto,
+    currentUser: JwtPayload,
+  ): Promise<ArticleResponse> {
+    // Editor can only author on their own behalf; admin may set any authorId.
+    const authorId =
+      currentUser.role === UserRole.ADMIN
+        ? dto.authorId ?? currentUser.userId
+        : currentUser.userId;
+
     const article = await this.prisma.article.create({
       data: {
         title: dto.title,
         content: dto.content,
         status: (dto.status as ArticleStatus) ?? 'draft',
-        authorId: dto.authorId ?? null,
+        authorId,
         categoryId: dto.categoryId ?? null,
         tags: {
           connectOrCreate: this.buildTagsConnectOrCreate(dto.tags ?? []),

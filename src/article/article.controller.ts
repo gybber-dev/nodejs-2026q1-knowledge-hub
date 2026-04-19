@@ -78,8 +78,11 @@ export class ArticleController {
   @ApiResponse({ status: 400, description: 'Validation error' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
-  create(@Body() dto: CreateArticleDto) {
-    return this.articleService.create(dto);
+  create(
+    @Body() dto: CreateArticleDto,
+    @CurrentUser() currentUser: JwtPayload,
+  ) {
+    return this.articleService.create(dto, currentUser);
   }
 
   @Put(':id')

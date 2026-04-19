@@ -69,7 +69,10 @@ export class CommentService {
     return this.toResponse(comment);
   }
 
-  async create(dto: CreateCommentDto): Promise<CommentResponse> {
+  async create(
+    dto: CreateCommentDto,
+    currentUser: JwtPayload,
+  ): Promise<CommentResponse> {
     const article = await this.prisma.article.findUnique({
       where: { id: dto.articleId },
     });
@@ -79,11 +82,17 @@ export class CommentService {
       );
     }
 
+    // Editor can only author on their own behalf; admin may set any authorId.
+    const authorId =
+      currentUser.role === UserRole.ADMIN
+        ? dto.authorId ?? currentUser.userId
+        : currentUser.userId;
+
     const comment = await this.prisma.comment.create({
       data: {
         content: dto.content,
         articleId: dto.articleId,
-        authorId: dto.authorId ?? null,
+        authorId,
       },
     });
     return this.toResponse(comment);

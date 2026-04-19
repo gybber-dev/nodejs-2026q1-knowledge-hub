@@ -89,8 +89,11 @@ export class CommentController {
     status: 422,
     description: 'Referenced article does not exist',
   })
-  create(@Body() dto: CreateCommentDto) {
-    return this.commentService.create(dto);
+  create(
+    @Body() dto: CreateCommentDto,
+    @CurrentUser() currentUser: JwtPayload,
+  ) {
+    return this.commentService.create(dto, currentUser);
   }
 
   @Put(':id')
