@@ -110,10 +110,11 @@ export class ArticleService {
     dto: CreateArticleDto,
     currentUser: JwtPayload,
   ): Promise<ArticleResponse> {
-    // Editor can only author on their own behalf; admin may set any authorId.
+    // Editor can only author on their own behalf; admin may set any authorId
+    // (including explicit null for "no author").
     const authorId =
       currentUser.role === UserRole.ADMIN
-        ? dto.authorId ?? currentUser.userId
+        ? dto.authorId ?? null
         : currentUser.userId;
 
     const article = await this.prisma.article.create({
