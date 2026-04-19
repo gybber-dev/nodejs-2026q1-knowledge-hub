@@ -1,9 +1,12 @@
 import 'dotenv/config';
+import * as bcrypt from 'bcrypt';
 import { PrismaClient } from '../generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
+
+const SALT_ROUNDS = parseInt(process.env.CRYPT_SALT ?? '10', 10);
 
 async function main() {
   // Clean up existing data (order matters: dependents first)
@@ -14,16 +17,18 @@ async function main() {
   await prisma.user.deleteMany();
 
   // Users
+  const adminPasswordHash = await bcrypt.hash('admin123', SALT_ROUNDS);
   const admin = await prisma.user.upsert({
     where: { login: 'admin' },
-    update: {},
-    create: { login: 'admin', password: 'admin123', role: 'admin' },
+    update: { password: adminPasswordHash },
+    create: { login: 'admin', password: adminPasswordHash, role: 'admin' },
   });
 
+  const editorPasswordHash = await bcrypt.hash('editor123', SALT_ROUNDS);
   const editor = await prisma.user.upsert({
     where: { login: 'editor' },
-    update: {},
-    create: { login: 'editor', password: 'editor123', role: 'editor' },
+    update: { password: editorPasswordHash },
+    create: { login: 'editor', password: editorPasswordHash, role: 'editor' },
   });
 
   // Categories
