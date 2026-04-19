@@ -1,11 +1,15 @@
 import {
+  ForbiddenException,
   Injectable,
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
+import { UpdateCommentDto } from './dto/update-comment.dto';
 import { Comment } from '../../generated/prisma/client';
+import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { UserRole } from '../common/enums/user-role.enum';
 import {
   ListQuery,
   PaginatedResult,
@@ -65,7 +69,10 @@ export class CommentService {
     return this.toResponse(comment);
   }
 
-  async create(dto: CreateCommentDto): Promise<CommentResponse> {
+  async create(
+    dto: CreateCommentDto,
+    currentUser: JwtPayload,
+  ): Promise<CommentResponse> {
     const article = await this.prisma.article.findUnique({
       where: { id: dto.articleId },
     });
@@ -75,18 +82,62 @@ export class CommentService {
       );
     }
 
+    // Editor can only author on their own behalf; admin may set any authorId
+    // (including explicit null for "no author").
+    const authorId =
+      currentUser.role === UserRole.ADMIN
+        ? dto.authorId ?? null
+        : currentUser.userId;
+
     const comment = await this.prisma.comment.create({
       data: {
         content: dto.content,
         articleId: dto.articleId,
-        authorId: dto.authorId ?? null,
+        authorId,
       },
     });
     return this.toResponse(comment);
   }
 
-  async delete(id: string): Promise<void> {
-    await this.findById(id);
+  async update(
+    id: string,
+    dto: UpdateCommentDto,
+    currentUser: JwtPayload,
+  ): Promise<CommentResponse> {
+    const existing = await this.prisma.comment.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException(`Comment with id ${id} not found`);
+    }
+
+    if (
+      currentUser.role !== UserRole.ADMIN &&
+      existing.authorId !== currentUser.userId
+    ) {
+      throw new ForbiddenException('You can only update your own comments');
+    }
+
+    const updated = await this.prisma.comment.update({
+      where: { id },
+      data: {
+        ...(dto.content !== undefined && { content: dto.content }),
+      },
+    });
+    return this.toResponse(updated);
+  }
+
+  async delete(id: string, currentUser: JwtPayload): Promise<void> {
+    const existing = await this.prisma.comment.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException(`Comment with id ${id} not found`);
+    }
+
+    if (
+      currentUser.role !== UserRole.ADMIN &&
+      existing.authorId !== currentUser.userId
+    ) {
+      throw new ForbiddenException('You can only delete your own comments');
+    }
+
     await this.prisma.comment.delete({ where: { id } });
   }
 }

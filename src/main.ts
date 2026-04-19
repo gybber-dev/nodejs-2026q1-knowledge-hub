@@ -19,6 +19,8 @@ async function bootstrap() {
     .setTitle('Knowledge Hub API')
     .setDescription('REST API for Knowledge Hub platform')
     .setVersion('1.0')
+    .addBearerAuth()
+    .addTag('auth', 'Authentication — signup, login, refresh, logout')
     .addTag('users', 'Operations with users')
     .addTag('articles', 'Operations with articles')
     .addTag('categories', 'Operations with categories')
