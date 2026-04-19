@@ -42,17 +42,17 @@ export class AuthService {
       );
     }
 
-    // First user on a clean DB becomes admin (bootstrap)
-    const count = await this.prisma.user.count();
-    const role: UserRole = count === 0 ? UserRole.ADMIN : UserRole.VIEWER;
-
     const hashedPassword = await bcrypt.hash(
       dto.password,
       parseInt(process.env.CRYPT_SALT ?? '10', 10),
     );
 
     const user = await this.prisma.user.create({
-      data: { login: dto.login, password: hashedPassword, role },
+      data: {
+        login: dto.login,
+        password: hashedPassword,
+        role: UserRole.VIEWER,
+      },
     });
 
     return this.toSignupResponse(user);
