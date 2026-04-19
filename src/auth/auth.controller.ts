@@ -15,7 +15,6 @@ import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
-import { RefreshDto } from './dto/refresh.dto';
 import { Public } from './decorators/public.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
 
@@ -63,8 +62,11 @@ export class AuthController {
   })
   @ApiResponse({ status: 401, description: 'Refresh token missing' })
   @ApiResponse({ status: 403, description: 'Refresh token invalid or expired' })
-  refresh(@Body() dto: RefreshDto) {
-    return this.authService.refresh(dto);
+  refresh(@Body() body: { refreshToken?: unknown }) {
+    return this.authService.refresh({
+      refreshToken:
+        typeof body?.refreshToken === 'string' ? body.refreshToken : undefined,
+    });
   }
 
   @Post('logout')

@@ -9,7 +9,6 @@ import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
-import { RefreshDto } from './dto/refresh.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { UserRole } from '../common/enums/user-role.enum';
 import { User } from '../../generated/prisma/client';
@@ -37,9 +36,7 @@ export class AuthService {
     });
 
     if (existing) {
-      throw new BadRequestException(
-        `Login "${dto.login}" is already taken`,
-      );
+      throw new BadRequestException(`Login "${dto.login}" is already taken`);
     }
 
     const hashedPassword = await bcrypt.hash(
@@ -82,7 +79,11 @@ export class AuthService {
     return tokens;
   }
 
-  async refresh(dto: RefreshDto): Promise<TokenPair> {
+  async refresh(dto: { refreshToken?: string }): Promise<TokenPair> {
+    if (!dto?.refreshToken || typeof dto.refreshToken !== 'string') {
+      throw new UnauthorizedException('Refresh token is missing');
+    }
+
     let payload: JwtPayload;
 
     try {
