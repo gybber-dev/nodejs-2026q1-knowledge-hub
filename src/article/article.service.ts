@@ -1,8 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateArticleDto } from './dto/create-article.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
 import { Article, ArticleStatus } from '../../generated/prisma/client';
+import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { UserRole } from '../common/enums/user-role.enum';
 import {
   ListQuery,
   PaginatedResult,
@@ -117,8 +123,27 @@ export class ArticleService {
     return this.toResponse(article);
   }
 
-  async update(id: string, dto: UpdateArticleDto): Promise<ArticleResponse> {
-    await this.findById(id);
+  async update(
+    id: string,
+    dto: UpdateArticleDto,
+    currentUser: JwtPayload,
+  ): Promise<ArticleResponse> {
+    const existing = await this.prisma.article.findUnique({
+      where: { id },
+      include: { tags: true },
+    });
+    if (!existing) {
+      throw new NotFoundException(`Article with id ${id} not found`);
+    }
+
+    if (
+      currentUser.role !== UserRole.ADMIN &&
+      existing.authorId !== currentUser.userId
+    ) {
+      throw new ForbiddenException(
+        'You can only update your own articles',
+      );
+    }
 
     const article = await this.prisma.article.update({
       where: { id },

@@ -1,19 +1,26 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { UpdatePasswordDto } from './dto/update-password.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 import { User, UserRole } from '../../generated/prisma/client';
+import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { UserRole as UserRoleEnum } from '../common/enums/user-role.enum';
 import {
   ListQuery,
   PaginatedResult,
   parsePrismaListArgs,
 } from '../common/utils/list.utils';
 
-type UserResponse = Omit<User, 'password' | 'createdAt' | 'updatedAt'> & {
+type UserResponse = {
+  id: string;
+  login: string;
+  role: string;
   createdAt: number;
   updatedAt: number;
 };
@@ -70,29 +77,64 @@ export class UserService {
   }
 
   async create(dto: CreateUserDto): Promise<UserResponse> {
+    const existing = await this.prisma.user.findUnique({
+      where: { login: dto.login },
+    });
+    if (existing) {
+      throw new BadRequestException(`Login "${dto.login}" is already taken`);
+    }
+
+    const hashedPassword = await bcrypt.hash(
+      dto.password,
+      parseInt(process.env.CRYPT_SALT ?? '10', 10),
+    );
+
     const user = await this.prisma.user.create({
       data: {
         login: dto.login,
-        password: dto.password,
+        password: hashedPassword,
         role: (dto.role as UserRole) ?? 'viewer',
       },
     });
     return this.toResponse(user);
   }
 
-  async updatePassword(
+  async update(
     id: string,
-    dto: UpdatePasswordDto,
+    dto: UpdateUserDto,
+    currentUser: JwtPayload,
   ): Promise<UserResponse> {
     const user = await this.findRaw(id);
+    const updateData: Partial<{ password: string; role: UserRole }> = {};
 
-    if (user.password !== dto.oldPassword) {
-      throw new ForbiddenException('Old password is incorrect');
+    if (dto.role !== undefined) {
+      if (currentUser.role !== UserRoleEnum.ADMIN) {
+        throw new ForbiddenException('Only admins can change user roles');
+      }
+      updateData.role = dto.role as unknown as UserRole;
+    }
+
+    if (dto.oldPassword !== undefined || dto.newPassword !== undefined) {
+      if (!dto.oldPassword || !dto.newPassword) {
+        throw new BadRequestException(
+          'Both oldPassword and newPassword are required for password update',
+        );
+      }
+
+      const passwordValid = await bcrypt.compare(dto.oldPassword, user.password);
+      if (!passwordValid) {
+        throw new ForbiddenException('Old password is incorrect');
+      }
+
+      updateData.password = await bcrypt.hash(
+        dto.newPassword,
+        parseInt(process.env.CRYPT_SALT ?? '10', 10),
+      );
     }
 
     const updated = await this.prisma.user.update({
       where: { id },
-      data: { password: dto.newPassword },
+      data: updateData,
     });
 
     return this.toResponse(updated);

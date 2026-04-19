@@ -11,6 +11,7 @@ import {
   Query,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiOperation,
   ApiParam,
   ApiQuery,
@@ -19,31 +20,27 @@ import {
 } from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { UpdatePasswordDto } from './dto/update-password.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 import { UserResponseEntity } from './entities/user-response.entity';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { UserRole } from '../common/enums/user-role.enum';
+import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
 @ApiTags('users')
+@ApiBearerAuth()
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get()
   @ApiOperation({ summary: 'Get all users' })
-  @ApiQuery({
-    name: 'sortBy',
-    required: false,
-    type: 'string',
-    example: 'createdAt',
-  })
+  @ApiQuery({ name: 'sortBy', required: false, type: 'string' })
   @ApiQuery({ name: 'order', required: false, enum: ['asc', 'desc'] })
   @ApiQuery({ name: 'page', required: false, type: 'number' })
   @ApiQuery({ name: 'limit', required: false, type: 'number' })
-  @ApiResponse({
-    status: 200,
-    description: 'List of all users',
-    type: UserResponseEntity,
-    isArray: true,
-  })
+  @ApiResponse({ status: 200, type: UserResponseEntity, isArray: true })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   async findAll(
     @Query('sortBy') sortBy?: string,
     @Query('order') order?: string,
@@ -56,53 +53,51 @@ export class UserController {
   @Get(':id')
   @ApiOperation({ summary: 'Get user by id' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
-  @ApiResponse({
-    status: 200,
-    description: 'User found',
-    type: UserResponseEntity,
-  })
+  @ApiResponse({ status: 200, type: UserResponseEntity })
   @ApiResponse({ status: 400, description: 'Invalid UUID' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'User not found' })
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.userService.findById(id);
   }
 
   @Post()
-  @ApiOperation({ summary: 'Create new user' })
-  @ApiResponse({
-    status: 201,
-    description: 'User created',
-    type: UserResponseEntity,
-  })
-  @ApiResponse({ status: 400, description: 'Validation error' })
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Create new user (admin only)' })
+  @ApiResponse({ status: 201, type: UserResponseEntity })
+  @ApiResponse({ status: 400, description: 'Validation error or login taken' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden (admin only)' })
   create(@Body() dto: CreateUserDto) {
     return this.userService.create(dto);
   }
 
   @Put(':id')
-  @ApiOperation({ summary: "Update user's password" })
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Update user password or role (admin only)' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
-  @ApiResponse({
-    status: 200,
-    description: 'Password updated',
-    type: UserResponseEntity,
-  })
-  @ApiResponse({ status: 400, description: 'Invalid UUID or validation error' })
-  @ApiResponse({ status: 403, description: 'Old password is incorrect' })
+  @ApiResponse({ status: 200, type: UserResponseEntity })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden or wrong password' })
   @ApiResponse({ status: 404, description: 'User not found' })
   update(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: UpdatePasswordDto,
+    @Body() dto: UpdateUserDto,
+    @CurrentUser() currentUser: JwtPayload,
   ) {
-    return this.userService.updatePassword(id, dto);
+    return this.userService.update(id, dto, currentUser);
   }
 
   @Delete(':id')
   @HttpCode(204)
-  @ApiOperation({ summary: 'Delete user' })
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Delete user (admin only)' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 204, description: 'User deleted' })
   @ApiResponse({ status: 400, description: 'Invalid UUID' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden (admin only)' })
   @ApiResponse({ status: 404, description: 'User not found' })
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.userService.delete(id);
